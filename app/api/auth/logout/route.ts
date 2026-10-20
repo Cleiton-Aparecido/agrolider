@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  backendUrl,
+  clearSessionCookie,
+  isSameOriginMutation,
+  jsonError,
+  SESSION_COOKIE,
+} from "@/lib/server/api";
+
+export async function POST(request: NextRequest) {
+  if (!isSameOriginMutation(request)) {
+    return jsonError(403, "Origem da solicitação não permitida.");
+  }
+
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  const result = token ? await revokeSession(token) : { revoked: true };
+  const response = NextResponse.json(
+    { message: result.revoked ? "Sessão encerrada." : "Sessão local encerrada." },
+    { headers: { "cache-control": "no-store" } },
+  );
+  clearSessionCookie(response);
+  return response;
+}
+
+// The local cookie is always cleared; an upstream failure (expired token,
+// API offline) must not surface as an error to someone who is signing out.
+async function revokeSession(token: string): Promise<{ revoked: boolean }> {
+  try {
+    const upstream = await fetch(backendUrl("/auth/logout"), {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!upstream.ok) {
+      console.warn(`Logout upstream respondeu ${upstream.status}.`);
+    }
+    return { revoked: upstream.ok };
+  } catch (error) {
+    console.warn("Logout upstream indisponível:", error);
+    return { revoked: false };
+  }
+}
