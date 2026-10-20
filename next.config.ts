@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     agentFeedback: true,
   },
   cacheComponents: true,
+  async rewrites() {
+    return [{ source: "/usuarios-roles", destination: "/usuarios" }];
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

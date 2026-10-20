@@ -1,5 +1,5 @@
-import { ProductsPage } from "@/components/products-page";
+import { ProductsListPage } from "@/components/products-list-page";
 
 export default function ProductsRoute() {
-  return <ProductsPage />;
+  return <ProductsListPage />;
 }

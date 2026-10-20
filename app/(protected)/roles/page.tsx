@@ -1,5 +1,5 @@
-import { RolesPage } from "@/components/roles-page";
+import { RolesListPage } from "@/components/roles-list-page";
 
 export default function RolesRoute() {
-  return <RolesPage />;
+  return <RolesListPage />;
 }

@@ -1,5 +1,5 @@
-import { PermissionsPage } from "@/components/permissions-page";
+import { PermissionsListPage } from "@/components/permissions-list-page";
 
 export default function PermissionsRoute() {
-  return <PermissionsPage />;
+  return <PermissionsListPage />;
 }

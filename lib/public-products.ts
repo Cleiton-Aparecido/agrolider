@@ -19,9 +19,12 @@ export function fetchPublicProducts(
   page: number,
   limit: number = PUBLIC_PRODUCTS_LIMIT,
   signal?: AbortSignal,
+  search?: string,
 ): Promise<PageResult<PublicProduct>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (search?.trim()) params.set("search", search.trim());
   return request<PageResult<PublicProduct>>(
-    `/api/backend/products/public?page=${page}&limit=${limit}`,
+    `/api/backend/products/public?${params.toString()}`,
     { signal },
   );
 }
