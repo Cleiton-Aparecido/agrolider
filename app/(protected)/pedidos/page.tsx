@@ -1,5 +1,5 @@
-import { OrdersPage } from "@/components/orders-page";
+import { OrdersListPage } from "@/components/orders-list-page";
 
 export default function OrdersRoute() {
-  return <OrdersPage />;
+  return <OrdersListPage />;
 }

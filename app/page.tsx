@@ -1,8 +1,9 @@
 import { Suspense } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { ArrowRight, ShoppingCart, User } from "lucide-react";
 import { ProductShowcase } from "@/components/product-showcase";
+import { StoreSearch } from "@/components/store-search";
 import { SESSION_COOKIE } from "@/lib/server/api";
 import { HOME_ROUTE } from "@/lib/routes";
 
@@ -11,25 +12,33 @@ export default function Home() {
     <div className="store-page">
       <header className="store-header">
         <div className="store-header-inner">
-          <Link href="/" aria-label="AgroLider Fertilizantes — início">
-            <Image src="/images/agrolider-logo.png" alt="AgroLider Fertilizantes" width={150} height={56} priority style={{ height: "auto", width: 150 }} />
+          <Link className="store-logo" href="/" aria-label="AgroLíder Fertilizantes — início">
+            <span role="img" aria-label="AgroLíder" />
           </Link>
-          <Suspense fallback={<Link className="button" href="/login">Entrar</Link>}>
+          <Suspense fallback={<div className="store-search" aria-hidden="true" />}>
+            <StoreSearch />
+          </Suspense>
+          <Suspense fallback={<Link className="store-login" href="/login"><User size={18} aria-hidden="true" />Login</Link>}>
             <AccountAction />
           </Suspense>
         </div>
       </header>
-      <main className="store-main">
-        <section className="store-hero">
-          <p className="eyebrow">Catálogo AgroLider</p>
-          <h1>Fertilizantes e insumos para o seu campo</h1>
-          <p>Confira os produtos disponíveis. Para fazer pedidos e acompanhar a operação, acesse o sistema.</p>
-        </section>
+      <section className="store-hero">
+        <div className="store-hero-inner">
+          <p className="eyebrow">Fertilizantes e insumos agrícolas</p>
+          <h1>Mais produtividade <span>para o seu campo</span></h1>
+          <p>Produtos de alta qualidade para nutrir o solo, proteger suas plantas e garantir melhores resultados.</p>
+          <a className="store-hero-cta" href="#produtos">
+            <ShoppingCart size={18} aria-hidden="true" /> Ver produtos <ArrowRight size={18} aria-hidden="true" />
+          </a>
+        </div>
+      </section>
+      <main className="store-main" id="produtos">
         <Suspense fallback={<div className="loading-state" role="status"><span className="spinner" aria-hidden="true" /> Carregando produtos...</div>}>
           <ProductShowcase />
         </Suspense>
       </main>
-      <footer className="store-footer">© AgroLider Fertilizantes</footer>
+      <footer className="store-footer">© AgroLíder Fertilizantes</footer>
     </div>
   );
 }
@@ -37,8 +46,8 @@ export default function Home() {
 async function AccountAction() {
   const hasSession = (await cookies()).has(SESSION_COOKIE);
   return hasSession ? (
-    <Link className="button" href={HOME_ROUTE}>Acessar o sistema</Link>
+    <Link className="store-login" href={HOME_ROUTE}><User size={18} aria-hidden="true" />Sistema</Link>
   ) : (
-    <Link className="button" href="/login">Entrar</Link>
+    <Link className="store-login" href="/login"><User size={18} aria-hidden="true" />Login</Link>
   );
 }

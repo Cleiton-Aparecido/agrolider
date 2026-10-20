@@ -63,7 +63,13 @@ export async function request<T>(
   }
 
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  const text = await response.text();
+  if (!text) return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new ApiError("Resposta inválida do servidor.", response.status);
+  }
 }
 
 export function api<T>(path: string, init?: RequestInit): Promise<T> {

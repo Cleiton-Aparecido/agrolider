@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { errorMessage } from "@/lib/api/client";
 import { ProductDetail } from "@/components/product-detail";
 import {
@@ -33,12 +33,12 @@ function StoreImage({ product }: { product: PublicProduct }) {
   );
 }
 
-function StoreCard({ product, page, onOpen }: { product: PublicProduct; page: number; onOpen: (id: string) => void }) {
+function StoreCard({ product, page, search, onOpen }: { product: PublicProduct; page: number; search: string; onOpen: (id: string) => void }) {
   return (
     <li className="store-card">
       <a
         className="store-card-link"
-        href={listUrl(page, product.id)}
+        href={listUrl(page, search, product.id)}
         onClick={(event) => {
           if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
           event.preventDefault();
@@ -54,14 +54,16 @@ function StoreCard({ product, page, onOpen }: { product: PublicProduct; page: nu
             <strong>{formatPrice(product.price)}</strong>
             <span>por {product.unit}</span>
           </div>
+          <span className="store-card-cta">Ver detalhes</span>
         </div>
       </a>
     </li>
   );
 }
 
-function listUrl(page: number, productId?: string) {
+function listUrl(page: number, search: string, productId?: string) {
   const params = new URLSearchParams();
+  if (search) params.set("busca", search);
   if (page > 1) params.set("pagina", String(page));
   if (productId) params.set("produto", productId);
   const query = params.toString();
@@ -73,10 +75,12 @@ export function ProductShowcase() {
   const selectedId = searchParams.get("produto");
   const parsedPage = Number(searchParams.get("pagina"));
   const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const search = (searchParams.get("busca") ?? "").trim();
   const scrollY = useRef(0);
   const query = useQuery({
-    queryKey: ["public-products", page, PUBLIC_PRODUCTS_LIMIT],
-    queryFn: ({ signal }) => fetchPublicProducts(page, PUBLIC_PRODUCTS_LIMIT, signal),
+    queryKey: ["public-products", page, PUBLIC_PRODUCTS_LIMIT, search],
+    queryFn: ({ signal }) => fetchPublicProducts(page, PUBLIC_PRODUCTS_LIMIT, signal, search),
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -95,24 +99,25 @@ export function ProductShowcase() {
 
   function openProduct(id: string) {
     scrollY.current = window.scrollY;
-    window.history.pushState({ showcase: true }, "", listUrl(page, id));
+    window.history.pushState({ showcase: true }, "", listUrl(page, search, id));
   }
 
   function backToList() {
     if (window.history.state?.showcase) window.history.back();
-    else window.history.pushState(null, "", listUrl(page));
+    else window.history.pushState(null, "", listUrl(page, search));
   }
 
   function goToPage(next: number) {
-    window.history.pushState(null, "", listUrl(next));
+    window.history.pushState(null, "", listUrl(next, search));
     window.scrollTo({ top: 0 });
   }
 
   const products = query.data?.items ?? [];
+  const allProducts = products;
   const totalPages = query.data
     ? Math.max(1, Math.ceil(query.data.total / query.data.limit))
     : 1;
-  const selected = selectedId ? products.find((product) => product.id === selectedId) : undefined;
+  const selected = selectedId ? allProducts.find((product) => product.id === selectedId) : undefined;
 
   return (
     <section aria-label="Catálogo de produtos">
@@ -128,6 +133,7 @@ export function ProductShowcase() {
       <div hidden={Boolean(selectedId)}>
       {query.data && (
         <div className="store-toolbar">
+          <h2 className="store-section-title">Produtos</h2>
           <span className="store-count" role="status">{query.data.total} produto(s)</span>
         </div>
       )}
@@ -148,14 +154,14 @@ export function ProductShowcase() {
         </div>
       ) : products.length === 0 ? (
         <div className="empty-state">
-          <strong>Nenhum produto disponível</strong>
-          Volte em breve para conferir novidades.
+          <strong>{search ? "Nenhum produto encontrado" : "Nenhum produto disponível"}</strong>
+          {search ? `Nada corresponde a "${search}".` : "Volte em breve para conferir novidades."}
         </div>
       ) : (
         <>
           <ul className="store-grid">
             {products.map((product) => (
-              <StoreCard key={product.id} product={product} page={page} onOpen={openProduct} />
+              <StoreCard key={product.id} product={product} page={page} search={search} onOpen={openProduct} />
             ))}
           </ul>
           {totalPages > 1 && (

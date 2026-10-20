@@ -31,6 +31,8 @@ async function forwardPublicProducts(searchParams: URLSearchParams) {
     const value = searchParams.get(key);
     if (value && /^\d{1,4}$/.test(value)) query.set(key, value);
   }
+  const search = searchParams.get("search")?.trim().slice(0, 100);
+  if (search) query.set("search", search);
   const suffix = query.size ? `?${query.toString()}` : "";
   try {
     const upstream = await fetch(backendUrl(`/${PUBLIC_PRODUCTS_PATH}`, suffix), {

@@ -14,10 +14,12 @@ export function ApiListPage<T extends TableRow>({
   endpoint,
   columns,
   toolbar,
+  actions,
   rowActions,
   emptyMessage = "Ainda não há registros para exibir.",
   initialParams = {},
   searchable = false,
+  searchPlaceholder = "Nome, identificador...",
   inlineError,
 }: {
   eyebrow?: string;
@@ -31,10 +33,13 @@ export function ApiListPage<T extends TableRow>({
     render?: (value: unknown, row: T) => React.ReactNode;
   }[];
   toolbar?: (reload: () => void) => React.ReactNode;
+  /** Botões principais no canto superior direito do cabeçalho. */
+  actions?: (reload: () => void) => React.ReactNode;
   rowActions?: (row: T, reload: () => void) => React.ReactNode;
   emptyMessage?: string;
   initialParams?: Record<string, string | undefined>;
   searchable?: boolean;
+  searchPlaceholder?: string;
   inlineError?: string;
 }) {
   const [page, setPage] = useState(1);
@@ -66,7 +71,7 @@ export function ApiListPage<T extends TableRow>({
 
   return (
     <>
-      <PageHeading title={title} eyebrow={eyebrow} description={description} />
+      <PageHeading title={title} eyebrow={eyebrow} description={description} action={actions ? <div className="page-actions">{actions(reload)}</div> : undefined} />
       {toolbar?.(reload)}
       {inlineError && <div className="notice error-notice" role="alert" style={{ marginBottom: 14 }}>{inlineError}</div>}
       <section className="table-panel" aria-label={`${title}: registros`}>
@@ -77,7 +82,7 @@ export function ApiListPage<T extends TableRow>({
               <input
                 className="input"
                 type="search"
-                placeholder="Nome, identificador..."
+                placeholder={searchPlaceholder}
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value);

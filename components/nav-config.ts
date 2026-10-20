@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Store,
   Truck,
+  UserCheck,
   UserCog,
   Users,
   Warehouse,
@@ -68,6 +69,7 @@ export const navigation: NavGroup[] = [
     heading: "Administração",
     links: [
       { href: "/usuarios", label: "Usuários", shortLabel: "Usuários", icon: UserCog, permissions: ["users.read"] },
+      { href: "/usuarios-roles", label: "Usuários e Roles", shortLabel: "Usuários e Roles", icon: UserCheck, permissions: ["users.read", "roles.read"] },
       { href: "/roles", label: "Roles", shortLabel: "Roles", icon: ShieldCheck, permissions: ["roles.read"] },
       { href: "/permissoes", label: "Permissões", shortLabel: "Permissões", icon: KeyRound, permissions: ["permissions.read"] },
     ],

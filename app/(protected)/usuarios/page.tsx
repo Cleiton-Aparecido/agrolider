@@ -1,5 +1,5 @@
-import { UsersPage } from "@/components/users-page";
+import { UsersAdminSwitch } from "@/components/users-admin-switch";
 
 export default function UsersRoute() {
-  return <UsersPage />;
+  return <UsersAdminSwitch />;
 }
