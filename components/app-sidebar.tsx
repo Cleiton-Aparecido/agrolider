@@ -4,13 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { isRouteActive, navigation } from "@/components/nav-config";
+import { isRouteActive, type NavGroup } from "@/components/nav-config";
 
 export function AppSidebar({
+  groups,
   pathname,
   collapsed,
   onToggleCollapsed,
 }: {
+  groups: NavGroup[];
   pathname: string;
   collapsed: boolean;
   onToggleCollapsed: () => void;
@@ -35,7 +37,7 @@ export function AppSidebar({
         />
       </Link>
       <nav className="sidebar-nav" aria-label="Navegação principal">
-        {navigation.map((group) => {
+        {groups.map((group) => {
           const open = collapsed || !closedGroups.includes(group.id);
           return (
             <section className="nav-group" key={group.id}>

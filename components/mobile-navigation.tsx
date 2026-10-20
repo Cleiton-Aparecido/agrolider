@@ -5,25 +5,28 @@ import { useEffect, useRef } from "react";
 import { LogOut, MoreHorizontal, X } from "lucide-react";
 import {
   isRouteActive,
-  mobileMoreGroups,
-  mobilePrimaryLinks,
+  splitMobileNavigation,
+  type NavGroup,
 } from "@/components/nav-config";
 import type { CurrentUser } from "@/lib/auth/types";
 
 export function MobileMoreMenu({
   open,
   onClose,
+  groups,
   pathname,
   user,
   onSignOut,
 }: {
   open: boolean;
   onClose: () => void;
+  groups: NavGroup[];
   pathname: string;
   user: CurrentUser;
   onSignOut: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { moreGroups: mobileMoreGroups } = splitMobileNavigation(groups);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -84,14 +87,18 @@ export function MobileMoreMenu({
 }
 
 export function MobileBottomNavigation({
+  groups,
   pathname,
   moreOpen,
   onOpenMore,
 }: {
+  groups: NavGroup[];
   pathname: string;
   moreOpen: boolean;
   onOpenMore: () => void;
 }) {
+  const { primaryLinks: mobilePrimaryLinks, moreGroups: mobileMoreGroups } =
+    splitMobileNavigation(groups);
   const moreActive = mobileMoreGroups.some((group) =>
     group.links.some((link) => isRouteActive(pathname, link.href)),
   );
