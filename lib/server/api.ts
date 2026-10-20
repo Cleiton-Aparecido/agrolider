@@ -63,6 +63,8 @@ export async function proxyApiRequest(
   if (contentType) headers.set("content-type", contentType);
   const idempotencyKey = request.headers.get("idempotency-key");
   if (idempotencyKey) headers.set("idempotency-key", idempotencyKey);
+  const correlationId = request.headers.get("x-correlation-id");
+  if (correlationId) headers.set("x-correlation-id", correlationId);
 
   const hasBody = !["GET", "HEAD"].includes(request.method);
 
@@ -78,6 +80,10 @@ export async function proxyApiRequest(
     const upstreamContentType = upstream.headers.get("content-type");
     if (upstreamContentType) {
       responseHeaders.set("content-type", upstreamContentType);
+    }
+    const upstreamCorrelationId = upstream.headers.get("x-correlation-id");
+    if (upstreamCorrelationId) {
+      responseHeaders.set("x-correlation-id", upstreamCorrelationId);
     }
     responseHeaders.set("cache-control", "no-store");
     return new NextResponse(upstream.body, {
