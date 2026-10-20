@@ -6,12 +6,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNavigation, MobileMoreMenu } from "@/components/mobile-navigation";
 import { currentTitle } from "@/components/nav-config";
 import { request, SESSION_EXPIRED_EVENT } from "@/lib/api/client";
+import { canAccessPath, filterNavigation, firstAllowedRoute } from "@/lib/auth/access";
 import type { CurrentUser } from "@/lib/auth/types";
+import { HOME_ROUTE } from "@/lib/routes";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,8 +26,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     queryKey: ["session"],
     queryFn: () => request<CurrentUser>("/api/auth/me"),
     retry: false,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
   const user = userQuery.data ?? null;
+  const groups = useMemo(() => (user ? filterNavigation(user) : []), [user]);
+  const allowed = user ? canAccessPath(user, pathname) : false;
+  const fallbackRoute = user ? firstAllowedRoute(user) : null;
 
   useEffect(() => {
     if (userQuery.isPending) return;
@@ -35,8 +42,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     if (user?.mustChangePassword && pathname !== "/primeiro-acesso") {
       router.replace("/primeiro-acesso");
+      return;
     }
-  }, [pathname, router, user?.mustChangePassword, userQuery.isError, userQuery.isPending]);
+    // Home padrão sem permissão: leva ao primeiro módulo autorizado, sem laço (destino é sempre autorizado).
+    if (user && !allowed && pathname === HOME_ROUTE && fallbackRoute) {
+      router.replace(fallbackRoute);
+    }
+  }, [allowed, fallbackRoute, pathname, router, user, userQuery.isError, userQuery.isPending]);
 
   useEffect(() => {
     const handleSessionExpired = () => {
@@ -74,6 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-frame" data-sidebar-collapsed={collapsed}>
       <AppSidebar
+        groups={groups}
         pathname={pathname}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((current) => !current)}
@@ -113,9 +126,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </header>
-        <main className="page-content">{children}</main>
+        <main className="page-content">
+          {allowed ? (
+            children
+          ) : (
+            <div className="empty-state" role="alert">
+              <strong>Acesso negado</strong>
+              Você não tem permissão para acessar esta área.
+              <div style={{ marginTop: 12 }}>
+                <Link className="button" href={fallbackRoute ?? "/"}>
+                  {fallbackRoute ? "Ir para uma área disponível" : "Voltar à vitrine"}
+                </Link>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
       <MobileBottomNavigation
+        groups={groups}
         pathname={pathname}
         moreOpen={moreOpen}
         onOpenMore={() => setMoreOpen(true)}
@@ -123,6 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <MobileMoreMenu
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
+        groups={groups}
         pathname={pathname}
         user={user}
         onSignOut={() => {

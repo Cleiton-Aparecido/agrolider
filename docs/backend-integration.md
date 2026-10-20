@@ -29,6 +29,13 @@ As coleções usam respostas paginadas `{ items, page, limit, total }`. Endpoint
 - Como `/auth/me` não expõe permissões efetivas, não é possível escolher outra rota inicial nem ocultar itens por permissão; o backend continua retornando 403 quando necessário.
 - Desktop (≥1024px): sidebar recolhível. Tablet (768–1023px): sidebar compacta. Celular (<768px): barra inferior com Produtos, Estoque, Pedidos, Clientes e Menu (sheet com os demais módulos). Não há rota de Configurações, Entradas, Saídas ou Ajustes separadas: entradas/saídas/ajustes ficam em `/estoque`.
 
+## Permissões no menu e nas rotas
+
+- `GET /auth/me` passou a devolver `permissions` (slugs, ex.: `products.read`), lidas do mesmo `request.user.permissions` que o `PermissionsGuard` usa. As roles continuam em `roles`.
+- Cada item de [nav-config.ts](../components/nav-config.ts) declara os slugs reais exigidos pelo endpoint de listagem da tela (qualquer um deles libera). `lib/auth/access.ts` concentra a regra: sidebar, barra inferior, menu "Mais" e guarda de rota usam `filterNavigation`/`canAccessPath`. Sem permissão, ou se `permissions` não vier, nada protegido aparece (falha fechada). Grupos vazios são ocultados.
+- Rota sem permissão exibe "Acesso negado" no `AppShell`, sem montar a página; no home `/produtos`, redireciona ao primeiro módulo autorizado. O backend continua validando cada operação.
+- A sessão é revalidada ao voltar o foco à aba, refletindo mudanças de permissão.
+
 ## Vitrine pública
 
 - `/` é pública e lista `GET /products/public` (backend: `@Public()`, retorna todos os produtos ativos, sem paginação ou busca; formato `ProductResponseDto[]` com `images[{ id, url, contentType }]`). A busca na tela é apenas um filtro local sobre a lista recebida.
