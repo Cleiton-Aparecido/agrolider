@@ -3,10 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { ApiListPage, type TableRow } from "@/components/api-list-page";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { FormModal, Modal, useModalForm } from "@/components/modal";
-import { api, apiMutation, errorMessage, type PageResult } from "@/lib/api/client";
+import { ApiError, api, apiMutation, errorMessage, type PageResult } from "@/lib/api/client";
 import { useCan } from "@/lib/auth/use-can";
 import { formatCurrency, statusLabel, statusTone } from "@/lib/utils/format";
 
@@ -48,6 +49,7 @@ interface HistoryEntry {
 
 function OrderFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const form = useModalForm();
+  const [operationId] = useState(() => crypto.randomUUID());
   const customersQuery = useQuery({
     queryKey: ["order-select", "customers"],
     queryFn: () => api<PageResult<Customer>>("/customers?page=1&limit=100"),
@@ -98,16 +100,25 @@ function OrderFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const ok = await form.run(async () => {
-      await apiMutation<Order>(
-        "orders",
-        "POST",
-        {
-          customerId: selectedCustomer,
-          items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
-          customerNotes: String(data.get("customerNotes") ?? "").trim() || undefined,
-        },
-        { "idempotency-key": crypto.randomUUID() },
-      );
+      try {
+        await apiMutation<Order>(
+          "orders",
+          "POST",
+          {
+            customerId: selectedCustomer,
+            items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+            customerNotes: String(data.get("customerNotes") ?? "").trim() || undefined,
+          },
+          // Chave estável durante todas as tentativas deste pedido.
+          { "idempotency-key": operationId, "x-correlation-id": operationId },
+        );
+      } catch (reason) {
+        if (reason instanceof ApiError && reason.status === 409 && reason.message.startsWith("Operação duplicada")) {
+          toast.info("Este pedido já havia sido registrado. A lista foi atualizada.");
+          return;
+        }
+        throw reason;
+      }
     }, errorMessage);
     if (ok) {
       onSaved();

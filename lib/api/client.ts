@@ -6,6 +6,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly correlationId?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -17,6 +18,13 @@ export interface PageResult<T> {
   page: number;
   limit: number;
   total: number;
+}
+
+export const CORRELATION_ID_HEADER = "x-correlation-id";
+
+// Cada operação HTTP recebe seu próprio id; operações com retentativa informam um id estável via headers.
+export function newCorrelationId(): string {
+  return crypto.randomUUID();
 }
 
 export async function request<T>(
@@ -31,6 +39,7 @@ export async function request<T>(
       cache: "no-store",
       headers: {
         accept: "application/json",
+        [CORRELATION_ID_HEADER]: newCorrelationId(),
         ...(init.body ? { "content-type": "application/json" } : {}),
         ...init.headers,
       },
@@ -59,7 +68,7 @@ export async function request<T>(
     } catch {
       // The HTTP status remains available when an upstream response has no JSON body.
     }
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, response.headers.get(CORRELATION_ID_HEADER) ?? undefined);
   }
 
   if (response.status === 204) return undefined as T;
@@ -110,6 +119,9 @@ export function errorMessage(error: unknown): string {
     if (error.status === 403) return "Seu perfil não tem acesso a esta operação.";
     if (error.status === 0 || error.status === 502) {
       return "Não foi possível conectar à API. Verifique se o serviço está disponível.";
+    }
+    if (error.status >= 500 && error.correlationId) {
+      return `${error.message} (Código de rastreio: ${error.correlationId})`;
     }
     return error.message;
   }
